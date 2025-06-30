@@ -105,3 +105,39 @@
         (ok true)
     )
 )
+
+;; Passport Issuance System
+
+(define-public (issue-passport
+        (passport-id (string-utf8 32))
+        (holder principal)
+        (full-name (string-utf8 100))
+        (date-of-birth uint)
+        (nationality (string-utf8 50))
+        (validity-period uint)
+        (metadata-url (optional (string-utf8 256)))
+    )
+    (begin
+        ;; Check authorization and validations
+        (asserts! (is-authority tx-sender) err-unauthorized)
+        (asserts! (is-none (map-get? PassportNumbers passport-id))
+            err-already-exists
+        )
+        (asserts! (is-none (map-get? HolderPassports holder)) err-already-exists)
+        ;; Set passport data
+        (map-set Passports { passport-id: passport-id } {
+            holder: holder,
+            full-name: full-name,
+            date-of-birth: date-of-birth,
+            nationality: nationality,
+            issue-date: stacks-block-height,
+            expiry-date: (+ stacks-block-height validity-period),
+            is-valid: true,
+            metadata-url: metadata-url,
+        })
+        ;; Set additional mappings
+        (map-set PassportNumbers passport-id true)
+        (map-set HolderPassports holder passport-id)
+        (ok true)
+    )
+)
